@@ -7,45 +7,68 @@ import Button from '@/components/ui/Button';
 interface AddApiKeyModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSubmit: (apiKey: { name: string; service: string; apiKey: string; endpoint: string }) => void;
 }
 
-export default function AddApiKeyModal({ isOpen, onClose }: AddApiKeyModalProps) {
+export default function AddApiKeyModal({ isOpen, onClose, onSubmit }: AddApiKeyModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     service: 'openai',
     apiKey: '',
-    endpoint: ''
+    endpoint: '',
   });
+  const [error, setError] = useState<string | null>(null);
 
   const services = [
     { value: 'openai', label: 'OpenAI', icon: 'ri-openai-line' },
     { value: 'anthropic', label: 'Anthropic (Claude)', icon: 'ri-robot-line' },
     { value: 'google', label: 'Google (Gemini)', icon: 'ri-google-line' },
-    { value: 'custom', label: 'Custom API', icon: 'ri-code-line' }
+    { value: 'custom', label: 'Custom API', icon: 'ri-code-line' },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Adding API key:', formData);
+    if (!formData.name || !formData.apiKey) {
+      setError('Name and API key are required.');
+      return;
+    }
+    if (formData.service === 'custom' && !formData.endpoint) {
+      setError('API endpoint is required for custom services.');
+      return;
+    }
+
+    onSubmit({
+      name: formData.name,
+      service: formData.service,
+      apiKey: formData.apiKey,
+      endpoint: formData.service === 'custom' ? formData.endpoint : '',
+    });
     onClose();
     setFormData({
       name: '',
       service: 'openai',
       apiKey: '',
-      endpoint: ''
+      endpoint: '',
     });
+    setError(null);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
+    setError(null);
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add New API Key" size="md">
       <form onSubmit={handleSubmit} className="space-y-4">
+        {error && (
+          <div className="text-red-600 text-sm bg-red-50 p-2 rounded-lg">
+            {error}
+          </div>
+        )}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             API Key Name
@@ -60,7 +83,6 @@ export default function AddApiKeyModal({ isOpen, onClose }: AddApiKeyModalProps)
             required
           />
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Service Provider
@@ -78,10 +100,9 @@ export default function AddApiKeyModal({ isOpen, onClose }: AddApiKeyModalProps)
                 </option>
               ))}
             </select>
-            <i className="ri-arrow-down-s-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+            <i className="ri-arrow-down-s-line absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" />
           </div>
         </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             API Key
@@ -96,7 +117,6 @@ export default function AddApiKeyModal({ isOpen, onClose }: AddApiKeyModalProps)
             required
           />
         </div>
-
         {formData.service === 'custom' && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -109,20 +129,19 @@ export default function AddApiKeyModal({ isOpen, onClose }: AddApiKeyModalProps)
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="https://api.example.com/v1"
+              required
             />
           </div>
         )}
-
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="flex items-start space-x-2">
-            <i className="ri-information-line text-blue-500 mt-0.5"></i>
+            <i className="ri-information-line text-blue-500 mt-0.5" />
             <div className="text-sm text-blue-700">
               <p className="font-medium mb-1">Security Note</p>
               <p>Your API keys are stored securely and never shared. They are only used for making requests to the respective AI services.</p>
             </div>
           </div>
         </div>
-
         <div className="flex justify-end space-x-3 pt-4">
           <Button variant="secondary" onClick={onClose}>
             Cancel
